@@ -83,11 +83,17 @@ func writeCurrentCommit(commitfile, commit string) error {
 	return ioutil.WriteFile(commitfile, []byte(commit), 0644)
 }
 
-func build(repodir, outputdir string) {
+func build(repodir, outputdir string) error {
 	version := getVersionFromGit(repodir)
 	start := time.Now()
 
 	fmt.Printf("compiling %v\n", version)
+
+	outputdir = filepath.Join(outputdir, fmt.Sprintf("restic-%v", version))
+	err := os.MkdirAll(outputdir, 0755)
+	if err != nil {
+		return err
+	}
 
 	type buildInfo struct {
 		OS   string
@@ -148,6 +154,7 @@ func build(repodir, outputdir string) {
 	wg.Wait()
 
 	fmt.Printf("built version %v in %v\n", version, time.Since(start))
+	return nil
 }
 
 const (
@@ -183,7 +190,10 @@ func main() {
 		newCommit := commitID(repodir)
 
 		if commit != newCommit {
-			build(repodir, outputdir)
+			err = build(repodir, outputdir)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "MkdirAll(%v) failed: %v\n", outputdir, err)
+			}
 		}
 
 		commit = newCommit
