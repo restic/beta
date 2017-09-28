@@ -1,0 +1,14 @@
+[Unit]
+Description=restic beta compile service
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c "beta"
+Restart=always
+RestartSec=2s
+#User=beta
+#Group=nogroup
+WorkingDirectory=/home/builder
+
+[Install]
+WantedBy=default.target
