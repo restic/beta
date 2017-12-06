@@ -164,7 +164,26 @@ const (
 	url        = "https://github.com/restic/restic"
 )
 
+func goVersion() (string, error) {
+	cmd := exec.Command("go", "version")
+	cmd.Stderr = os.Stderr
+	buf, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	return string(buf), nil
+}
+
 func main() {
+	v, err := goVersion()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to get Go version: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Go version %v\n", v)
+
 	if !exists(repodir) {
 		err := clone("https://github.com/restic/restic", repodir)
 		if err != nil {
