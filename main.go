@@ -126,6 +126,10 @@ func build(repodir, outputdir string) error {
 			for build := range ch {
 				filename := fmt.Sprintf("restic_%v_%v_%v", version, build.OS, build.Arch)
 
+				if build.OS == "windows" {
+					filename += ".exe"
+				}
+
 				args := []string{"run", "build.go",
 					"-o", filepath.Join(outputdir, filename),
 					"--goos", build.OS,
