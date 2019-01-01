@@ -130,7 +130,7 @@ func build(repodir, outputdir string) error {
 					filename += ".exe"
 				}
 
-				args := []string{"run", "build.go",
+				args := []string{"run", "-mod=vendor", "build.go",
 					"-o", filepath.Join(outputdir, filename),
 					"--goos", build.OS,
 					"--goarch", build.Arch,
