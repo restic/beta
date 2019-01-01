@@ -225,6 +225,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "write state file %v: %v\n", commitfile, err)
 		}
 
-		time.Sleep(3 * time.Minute)
+		time.Sleep(time.Minute)
 	}
 }
