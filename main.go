@@ -110,6 +110,7 @@ func build(repodir, outputdir string) error {
 		{"linux", "amd64"},
 		{"linux", "arm"},
 		{"linux", "arm64"},
+		{"linux", "ppc64le"},
 		{"openbsd", "386"},
 		{"openbsd", "amd64"},
 		{"windows", "386"},
