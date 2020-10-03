@@ -101,7 +101,6 @@ func build(repodir, outputdir string) error {
 	}
 
 	var builds = []buildInfo{
-		{"darwin", "386"},
 		{"darwin", "amd64"},
 		{"freebsd", "386"},
 		{"freebsd", "amd64"},
