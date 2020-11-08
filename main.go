@@ -140,18 +140,13 @@ func build(repodir, outputdir string) error {
 					filename += ".exe"
 				}
 
-				args := []string{"run", "build.go",
-					"-o", filepath.Join(outputdir, filename),
-					"--goos", build.OS,
-					"--goarch", build.Arch,
-				}
-
-				cmd := exec.Command("go", args...)
+				cmd := exec.Command("go", "build", "-o", filepath.Join(outputdir, filename))
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Dir = repodir
-				err := cmd.Run()
+				cmd.Env = append(os.Environ(), "GOOS="+build.OS, "GOARCH="+build.Arch)
 
+				err := cmd.Run()
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "compiling %v for %v/%v failed: %v\n",
 						version, build.OS, build.Arch, err)
