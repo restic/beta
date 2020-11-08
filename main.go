@@ -222,7 +222,6 @@ func main() {
 
 		newCommit := commitID(repodir)
 
-		fmt.Printf("current commit %v, new commit %v\n", commit, newCommit)
 		if commit != newCommit {
 			err = build(repodir, outputdir)
 			if err != nil {
