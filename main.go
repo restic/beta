@@ -144,7 +144,11 @@ func build(repodir, outputdir string) error {
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Dir = repodir
-				cmd.Env = append(os.Environ(), "GOOS="+build.OS, "GOARCH="+build.Arch)
+				cmd.Env = append(os.Environ(),
+					"GOOS="+build.OS,
+					"GOARCH="+build.Arch,
+					"CGO_ENABLED=0",
+				)
 
 				err := cmd.Run()
 				if err != nil {
