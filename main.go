@@ -30,6 +30,7 @@ func clone(url, dir string) error {
 	cmd := exec.Command("git", "clone", "--quiet", url, dir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	return cmd.Run()
 }
 
@@ -38,6 +39,7 @@ func update(dir string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = dir
+
 	return cmd.Run()
 }
 
@@ -45,6 +47,7 @@ func commitID(dir string) string {
 	cmd := exec.Command("git", "rev-parse", "HEAD")
 	cmd.Stderr = os.Stderr
 	cmd.Dir = dir
+
 	buf, err := cmd.Output()
 	if err != nil {
 		panic(err)
@@ -59,13 +62,13 @@ func getVersionFromGit(repodir string) string {
 	cmd := exec.Command("git", "describe",
 		"--long", "--tags", "--dirty", "--always")
 	cmd.Dir = repodir
+
 	out, err := cmd.Output()
 	if err != nil {
 		panic(fmt.Sprintf("git describe returned error: %v\n", err))
 	}
 
-	version := strings.TrimSpace(string(out))
-	return version
+	return strings.TrimSpace(string(out))
 }
 
 func readCurrentCommit(commitfile string) (string, error) {
@@ -73,50 +76,55 @@ func readCurrentCommit(commitfile string) (string, error) {
 	if os.IsNotExist(err) {
 		return "", nil
 	}
+
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("reading commit failed: %w", err)
 	}
+
 	return string(buf), nil
 }
 
 func writeCurrentCommit(commitfile, commit string) error {
-	return ioutil.WriteFile(commitfile, []byte(commit), 0644)
+	return ioutil.WriteFile(commitfile, []byte(commit), 0600)
+}
+
+// BuildTarget specifies an OS/architecture pair for compilation.
+type BuildTarget struct {
+	OS   string
+	Arch string
+}
+
+// BuildTargets is a list of OS/architecture pairs to build for.
+var BuildTargets = []BuildTarget{
+	{"darwin", "amd64"},
+	{"freebsd", "386"},
+	{"freebsd", "amd64"},
+	{"freebsd", "arm"},
+	{"linux", "386"},
+	{"linux", "amd64"},
+	{"linux", "arm"},
+	{"linux", "arm64"},
+	{"linux", "ppc64le"},
+	{"openbsd", "386"},
+	{"openbsd", "amd64"},
+	{"windows", "386"},
+	{"windows", "amd64"},
 }
 
 func build(repodir, outputdir string) error {
 	version := getVersionFromGit(repodir)
 	start := time.Now()
+	outputdir = filepath.Join(outputdir, fmt.Sprintf("restic-%v", version))
 
 	fmt.Printf("compiling %v\n", version)
 
-	outputdir = filepath.Join(outputdir, fmt.Sprintf("restic-%v", version))
 	err := os.MkdirAll(outputdir, 0755)
 	if err != nil {
-		return err
+		return fmt.Errorf("mkdir output dir failed: %w", err)
 	}
 
-	type buildInfo struct {
-		OS   string
-		Arch string
-	}
+	ch := make(chan BuildTarget)
 
-	var builds = []buildInfo{
-		{"darwin", "amd64"},
-		{"freebsd", "386"},
-		{"freebsd", "amd64"},
-		{"freebsd", "arm"},
-		{"linux", "386"},
-		{"linux", "amd64"},
-		{"linux", "arm"},
-		{"linux", "arm64"},
-		{"linux", "ppc64le"},
-		{"openbsd", "386"},
-		{"openbsd", "amd64"},
-		{"windows", "386"},
-		{"windows", "amd64"},
-	}
-
-	ch := make(chan buildInfo)
 	var wg sync.WaitGroup
 
 	for i := 0; i < runtime.NumCPU(); i++ {
@@ -143,6 +151,7 @@ func build(repodir, outputdir string) error {
 				cmd.Stderr = os.Stderr
 				cmd.Dir = repodir
 				err := cmd.Run()
+
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "compiling %v for %v/%v failed: %v\n",
 						version, build.OS, build.Arch, err)
@@ -152,30 +161,33 @@ func build(repodir, outputdir string) error {
 		}()
 	}
 
-	for _, build := range builds {
-		ch <- build
+	for _, target := range BuildTargets {
+		ch <- target
 	}
+
 	close(ch)
 
 	wg.Wait()
 
 	fmt.Printf("built version %v in %v\n", version, time.Since(start))
+
 	return nil
 }
 
 const (
-	repodir    = "restic.git"
-	outputdir  = "/var/www/beta.restic.net"
-	commitfile = "commit.current"
-	url        = "https://github.com/restic/restic"
+	repodir      = "restic.git"
+	outputdir    = "/var/www/beta.restic.net"
+	commitfile   = "commit.current"
+	pollInterval = 5 * time.Minute
 )
 
 func goVersion() (string, error) {
 	cmd := exec.Command("go", "version")
 	cmd.Stderr = os.Stderr
+
 	buf, err := cmd.Output()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("detect go version failed: %w", err)
 	}
 
 	return string(buf), nil
@@ -208,7 +220,8 @@ func main() {
 		err := update(repodir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error update: %v\n", err)
-			time.Sleep(5 * time.Minute)
+			time.Sleep(pollInterval)
+
 			continue
 		}
 
@@ -222,6 +235,7 @@ func main() {
 		}
 
 		commit = newCommit
+
 		err = writeCurrentCommit(commitfile, commit)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "write state file %v: %v\n", commitfile, err)
