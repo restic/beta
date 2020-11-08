@@ -121,8 +121,10 @@ func build(repodir, outputdir string) error {
 
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
+
 			for build := range ch {
 				filename := fmt.Sprintf("restic_%v_%v_%v", version, build.OS, build.Arch)
 
@@ -130,7 +132,7 @@ func build(repodir, outputdir string) error {
 					filename += ".exe"
 				}
 
-				args := []string{"run", "-mod=vendor", "build.go",
+				args := []string{"run", "build.go",
 					"-o", filepath.Join(outputdir, filename),
 					"--goos", build.OS,
 					"--goarch", build.Arch,
