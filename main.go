@@ -140,7 +140,7 @@ func build(repodir, outputdir string) error {
 					filename += ".exe"
 				}
 
-				cmd := exec.Command("go", "build", "-o", filepath.Join(outputdir, filename))
+				cmd := exec.Command("go", "build", "-o", filepath.Join(outputdir, filename), "./cmd/restic")
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Dir = repodir
