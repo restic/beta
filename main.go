@@ -97,6 +97,7 @@ type BuildTarget struct {
 // BuildTargets is a list of OS/architecture pairs to build for.
 var BuildTargets = []BuildTarget{
 	{"darwin", "amd64"},
+	{"darwin", "arm64"},
 	{"freebsd", "386"},
 	{"freebsd", "amd64"},
 	{"freebsd", "arm"},
