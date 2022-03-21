@@ -171,6 +171,22 @@ func build(repodir, outputdir string) error {
 
 	fmt.Printf("built version %v in %v\n", version, time.Since(start))
 
+	// create new symlink "latest" pointing to the current dir
+	// in order to do that without too much hassle, we first create the symlink
+	// and then rename it to "latest", overwriting the old symlink
+
+	tempname := filepath.Join(filepath.Dir(outputdir), "latest-"+filepath.Base(outputdir))
+
+	err = os.Symlink(filepath.Base(outputdir), tempname)
+	if err != nil {
+		return fmt.Errorf("symlink: %w", err)
+	}
+
+	err = os.Rename(tempname, filepath.Join(filepath.Dir(outputdir), "latest"))
+	if err != nil {
+		return fmt.Errorf("rename: %w", err)
+	}
+
 	return nil
 }
 
