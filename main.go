@@ -194,8 +194,20 @@ func build(repodir, outputdir string) error {
 		return err
 	}
 
-	for _, target := range BuildTarget {
-		return symlinkAndRename(filepath.Base(outputdir), filepath.Join(filepath.Dir(outputdir), "latest"))
+	for _, build := range BuildTargets {
+		filename := fmt.Sprintf("restic_%v_%v_%v", version, build.OS, build.Arch)
+		if build.OS == "windows" {
+			filename += ".exe"
+		}
+
+		symlink := fmt.Sprintf("latest_restic_%v_%v", build.OS, build.Arch)
+
+		err = symlinkAndRename(
+			filepath.Join(filepath.Base(outputdir), filename),
+			filepath.Join(filepath.Dir(outputdir), symlink))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
