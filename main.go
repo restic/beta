@@ -112,6 +112,23 @@ var BuildTargets = []BuildTarget{
 	{"windows", "amd64"},
 }
 
+// symlinkAndRename atomically creates a symlink by using symlink+rename.
+func symlinkAndRename(oldname, newname string) error {
+	tempname := filepath.Join(filepath.Dir(newname), "symlink-"+filepath.Base(oldname))
+
+	err := os.Symlink(oldname, tempname)
+	if err != nil {
+		return fmt.Errorf("symlink: %w", err)
+	}
+
+	err = os.Rename(tempname, newname)
+	if err != nil {
+		return fmt.Errorf("rename: %w", err)
+	}
+
+	return nil
+}
+
 func build(repodir, outputdir string) error {
 	version := getVersionFromGit(repodir)
 	start := time.Now()
@@ -172,19 +189,13 @@ func build(repodir, outputdir string) error {
 	fmt.Printf("built version %v in %v\n", version, time.Since(start))
 
 	// create new symlink "latest" pointing to the current dir
-	// in order to do that without too much hassle, we first create the symlink
-	// and then rename it to "latest", overwriting the old symlink
-
-	tempname := filepath.Join(filepath.Dir(outputdir), "latest-"+filepath.Base(outputdir))
-
-	err = os.Symlink(filepath.Base(outputdir), tempname)
+	err = symlinkAndRename(filepath.Base(outputdir), filepath.Join(filepath.Dir(outputdir), "latest"))
 	if err != nil {
-		return fmt.Errorf("symlink: %w", err)
+		return err
 	}
 
-	err = os.Rename(tempname, filepath.Join(filepath.Dir(outputdir), "latest"))
-	if err != nil {
-		return fmt.Errorf("rename: %w", err)
+	for _, target := range BuildTarget {
+		return symlinkAndRename(filepath.Base(outputdir), filepath.Join(filepath.Dir(outputdir), "latest"))
 	}
 
 	return nil
